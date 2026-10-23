@@ -1,0 +1,831 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Split — stem separator</title>
+<link rel="icon" href="data:image/svg+xml,<svg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20100%20100'>%20<rect%20width='100'%20height='100'%20rx='20'%20fill='%230e0d0c'/>%20<path%20d='M22%2030%20H78%20M22%2050%20H62%20M22%2070%20H70'%20fill='none'%20stroke='%23ff6a1a'%20stroke-width='8'%20stroke-linecap='round'/>%20</svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/lamejs/1.2.1/lame.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<style>
+:root{
+  --bg:#0e0d0c; --panel:#171513; --line:#2c2824; --text:#ece6de;
+  --muted:#8f877d; --accent:#ff6a1a; --accent-dim:#5a2a10;
+  --serif:"Playfair Display",Georgia,"Times New Roman",serif;
+  --mono:"JetBrains Mono",ui-monospace,"SFMono-Regular",Menlo,Consolas,monospace;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+*,*::before,*::after{box-sizing:inherit}
+html,body{margin:0;background:var(--bg);color:var(--text)}
+body{font-family:var(--mono);font-size:14px;line-height:1.55;-webkit-font-smoothing:antialiased}
+main{max-width:720px;margin:0 auto;padding:48px 20px 64px;position:relative}
+header{text-align:center;margin:0 auto 36px}
+.kicker{display:block;text-align:center;color:var(--accent);font-size:12px;letter-spacing:.18em;margin-bottom:18px}
+h1{font-family:var(--serif);font-weight:900;font-size:clamp(64px,14vw,112px);line-height:.85;margin:0;letter-spacing:-.02em}
+.sub{color:var(--muted);margin:14px auto 0;max-width:46ch}
+.lang{position:absolute;top:48px;right:20px;display:flex;border:1px solid var(--line);border-radius:999px;overflow:hidden;flex-shrink:0}
+.lang button{background:none;border:0;color:var(--muted);font:inherit;font-size:12px;padding:6px 12px;cursor:pointer}
+.lang button[aria-pressed="true"]{background:var(--text);color:var(--bg)}
+
+.drop{display:block;border:1px solid var(--line);border-radius:18px;padding:44px 20px;text-align:center;cursor:pointer;transition:border-color .15s,background .15s}
+.drop:hover,.drop.over{border-color:var(--accent);background:#1a1411}
+.drop strong{display:block;font-family:var(--serif);font-weight:400;font-size:30px;margin-bottom:6px}
+.drop span{color:var(--muted);font-size:12px}
+.drop input{position:absolute;width:1px;height:1px;opacity:0}
+
+.work{display:none;margin-top:28px}
+.work.on{display:block}
+.file{display:flex;justify-content:space-between;gap:12px;align-items:baseline;flex-wrap:wrap;margin-bottom:26px}
+.file .name{font-family:var(--serif);font-size:26px;word-break:break-all}
+.meta{color:var(--muted);font-size:12px}
+.change{background:none;border:0;color:var(--accent);font:inherit;font-size:12px;cursor:pointer;padding:0;text-decoration:underline;text-underline-offset:3px}
+
+.row{display:grid;grid-template-columns:130px 1fr;gap:10px 16px;align-items:center;margin-bottom:14px}
+.row > label{color:var(--muted);font-size:12px}
+.seg{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;width:100%}
+.seg.four{grid-template-columns:repeat(4,1fr)}
+.seg button{width:100%;text-align:center;white-space:nowrap;background:var(--panel);border:1px solid var(--line);color:var(--text);font:inherit;font-size:13px;padding:10px 8px;border-radius:8px;cursor:pointer}
+.seg button[aria-pressed="true"]{border-color:var(--accent);color:var(--accent)}
+.seg.big button{font-family:var(--serif);font-size:24px;padding:6px 22px}
+.hide{display:none!important}
+
+.go{margin-top:22px;width:100%;background:var(--accent);color:#140a04;border:0;border-radius:10px;font:600 15px var(--mono);padding:16px;cursor:pointer}
+.go:disabled{background:var(--accent-dim);color:#b98c70;cursor:progress}
+.bar{height:3px;background:var(--line);margin-top:12px;border-radius:2px;overflow:hidden}
+.bar i{display:block;height:100%;width:0;background:var(--accent);transition:width .1s}
+.status{min-height:1.5em;margin-top:10px;color:var(--muted);font-size:12px}
+.status.err{color:#ff8a7a}
+.hint{margin-top:6px;color:var(--muted);font-size:12px}
+
+.stems{display:none;margin-top:26px}
+.stems.on{display:block}
+.stem{padding:16px 18px;border:1px solid var(--line);border-radius:12px;background:var(--panel);margin-bottom:12px}
+.stem.main{border-color:var(--accent-dim)}
+.stem-head{display:flex;justify-content:space-between;align-items:baseline;gap:4px 12px;flex-wrap:wrap;margin-bottom:10px}
+.stem-name{font-family:var(--serif);font-size:24px}
+.stem audio{width:100%;margin-bottom:12px}
+.stem-foot{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.dl{display:inline-block;color:var(--bg);background:var(--text);text-decoration:none;padding:10px 16px;border-radius:8px;font-weight:600}
+.zip{display:block;width:100%;margin-top:6px;background:none;color:var(--text);border:1px solid var(--line);border-radius:10px;font:600 14px var(--mono);padding:14px;cursor:pointer;transition:border-color .15s}
+.zip:hover{border-color:var(--accent)}
+.zip:disabled{opacity:.5;cursor:progress}
+.again{margin-top:14px;text-align:center}
+
+footer{margin-top:56px;color:var(--muted);font-size:12px;border-top:1px solid var(--line);padding-top:16px}
+footer a{color:var(--text)}
+.repo-row{display:flex;justify-content:space-between;align-items:center;margin-top:24px;gap:12px}
+.repo-link{display:inline-flex;align-items:center;gap:6px;color:var(--muted);font-family:var(--mono);font-size:12px;text-decoration:none;border:1px solid var(--line);border-radius:999px;padding:8px 16px;transition:border-color .15s,color .15s}
+.repo-link:hover{border-color:var(--accent);color:var(--text)}
+.signature{margin-top:16px;text-align:center;color:var(--muted);font-size:12px}
+.signature i{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--accent);margin-right:8px;vertical-align:middle;font-style:normal}
+button:focus-visible,.drop:focus-within,a:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+@media (max-width:520px){
+  main{padding-top:76px}
+  .row{grid-template-columns:1fr;gap:6px}
+  .lang{top:20px}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <div>
+      <span class="kicker" data-i18n="kicker"></span>
+      <h1>Split</h1>
+      <p class="sub" data-i18n="sub"></p>
+    </div>
+    <div class="lang" role="group" aria-label="Language">
+      <button data-lang="ru" aria-pressed="true">RU</button>
+      <button data-lang="en" aria-pressed="false">EN</button>
+    </div>
+  </header>
+
+  <label class="drop" id="drop">
+    <input type="file" id="file" accept="audio/*,video/*,.mp3,.wav,.m4a,.flac,.aac,.ogg,.opus,.wma,.mp4,.mov,.m4v,.webm">
+    <strong data-i18n="dropTitle"></strong>
+    <span data-i18n="dropHint"></span>
+  </label>
+
+  <section class="work" id="work">
+    <div class="file">
+      <div>
+        <div class="name" id="fname"></div>
+        <div class="meta" id="fmeta"></div>
+      </div>
+      <button class="change" id="change" data-i18n="change"></button>
+    </div>
+
+    <div class="row">
+      <label data-i18n="part"></label>
+      <div class="seg" data-key="part">
+        <button data-v="full" aria-pressed="true" data-i18n="full"></button>
+        <button data-v="clip" aria-pressed="false" data-i18n="clip"></button>
+      </div>
+    </div>
+    <div class="row">
+      <label data-i18n="format"></label>
+      <div class="seg big" data-key="format">
+        <button data-v="mp3" aria-pressed="true">MP3</button>
+        <button data-v="wav" aria-pressed="false">WAV</button>
+      </div>
+    </div>
+    <div class="row" id="rowKbps">
+      <label data-i18n="bitrate"></label>
+      <div class="seg four" data-key="kbps">
+        <button data-v="128" aria-pressed="false">128</button>
+        <button data-v="192" aria-pressed="false">192</button>
+        <button data-v="256" aria-pressed="false">256</button>
+        <button data-v="320" aria-pressed="true">320</button>
+      </div>
+    </div>
+    <div class="row hide" id="rowBits">
+      <label data-i18n="bits"></label>
+      <div class="seg" data-key="bits">
+        <button data-v="16" aria-pressed="true">16 bit</button>
+        <button data-v="24" aria-pressed="false">24 bit</button>
+      </div>
+    </div>
+
+    <button class="go" id="go" data-i18n="go"></button>
+    <div class="bar"><i id="prog"></i></div>
+    <div class="status" id="status" role="status"></div>
+    <div class="hint" id="hint" data-i18n="hint"></div>
+
+    <div class="stems" id="stems">
+      <div id="stemList"></div>
+      <button class="zip" id="zip" data-i18n="zip"></button>
+      <div class="again"><button class="change" id="again" data-i18n="again"></button></div>
+    </div>
+  </section>
+
+  <footer>
+    <span data-i18n="privacy"></span>
+    <span data-i18n="cli"></span>
+  </footer>
+
+  <div class="repo-row">
+    <a class="repo-link" href="https://github.com/imBeyondiDentity/Split" target="_blank" rel="noopener">GitHub</a>
+    <a class="repo-link" href="mailto:imbeyondidentity@gmail.com" data-i18n="contact"></a>
+  </div>
+  <div class="signature"><i></i>Split</div>
+</main>
+
+<script type="module">
+/*
+ * Split — splits a track into vocals, drums, bass and other, and builds
+ * an instrumental (drums + bass + other). Runs fully in the browser.
+ *
+ * The separation engine below (STFT/iSTFT, tensor packing and the
+ * model post-processing) is adapted from demucs-web by timcsy,
+ * MIT licence — https://github.com/timcsy/demucs-web
+ * Model: HTDemucs by Meta (MIT), ONNX export hosted on Hugging Face.
+ * See NOTICE for the full licence text.
+ */
+
+// ===== ENGINE BEGIN =====
+const SAMPLE_RATE = 44100;
+const FFT_SIZE = 4096;
+const HOP_SIZE = 1024;
+const TRAINING_SAMPLES = 343980;   // fixed segment length of the model
+const SPEC_BINS = 2048;
+const SPEC_FRAMES = 336;
+const OVERLAP = 0.25;
+const TRACKS = ["drums", "bass", "other", "vocals"];   // model output order
+
+const fftTw = new Map(), ifftTw = new Map(), hann = new Map();
+
+function twiddles(cache, n, sign) {
+  if (cache.has(n)) return cache.get(n);
+  const re = new Float32Array(n / 2), im = new Float32Array(n / 2);
+  for (let k = 0; k < n / 2; k++) {
+    const a = sign * 2 * Math.PI * k / n;
+    re[k] = Math.cos(a); im[k] = Math.sin(a);
+  }
+  const t = { re, im };
+  cache.set(n, t);
+  return t;
+}
+
+function hannWindow(n) {
+  if (hann.has(n)) return hann.get(n);
+  const w = new Float32Array(n);
+  for (let i = 0; i < n; i++) w[i] = 0.5 * (1 - Math.cos(2 * Math.PI * i / n));
+  hann.set(n, w);
+  return w;
+}
+
+function bitReverse(x, bits) {
+  let r = 0;
+  for (let i = 0; i < bits; i++) { r = (r << 1) | (x & 1); x >>= 1; }
+  return r;
+}
+
+function butterfly(outRe, outIm, inRe, inIm, n, tw) {
+  const bits = Math.log2(n) | 0;
+  for (let i = 0; i < n; i++) {
+    const j = bitReverse(i, bits);
+    outRe[i] = inRe[j];
+    outIm[i] = inIm ? inIm[j] : 0;
+  }
+  for (let size = 2; size <= n; size *= 2) {
+    const half = size / 2, step = n / size;
+    for (let i = 0; i < n; i += size) {
+      for (let j = 0; j < half; j++) {
+        const k = j * step, tr = tw.re[k], ti = tw.im[k];
+        const a = i + j, b = a + half;
+        const er = outRe[a], ei = outIm[a];
+        const or = outRe[b] * tr - outIm[b] * ti;
+        const oi = outRe[b] * ti + outIm[b] * tr;
+        outRe[a] = er + or; outIm[a] = ei + oi;
+        outRe[b] = er - or; outIm[b] = ei - oi;
+      }
+    }
+  }
+}
+
+function fft(outRe, outIm, inRe, n) {
+  butterfly(outRe, outIm, inRe, null, n, twiddles(fftTw, n, -1));
+}
+
+function ifft(outRe, outIm, inRe, inIm, n) {
+  butterfly(outRe, outIm, inRe, inIm, n, twiddles(ifftTw, n, 1));
+  for (let i = 0; i < n; i++) { outRe[i] /= n; outIm[i] /= n; }
+}
+
+function stft(signal, fftSize, hop) {
+  const frames = Math.floor((signal.length - fftSize) / hop) + 1;
+  const bins = fftSize / 2 + 1, win = hannWindow(fftSize);
+  const scale = 1 / Math.sqrt(fftSize);
+  const re = new Float32Array(frames * bins), im = new Float32Array(frames * bins);
+  const fr = new Float32Array(fftSize), fi = new Float32Array(fftSize);
+  const buf = new Float32Array(fftSize);
+  for (let f = 0; f < frames; f++) {
+    const s = f * hop;
+    for (let i = 0; i < fftSize; i++) buf[i] = signal[s + i] * win[i];
+    fft(fr, fi, buf, fftSize);
+    const o = f * bins;
+    for (let k = 0; k < bins; k++) { re[o + k] = fr[k] * scale; im[o + k] = fi[k] * scale; }
+  }
+  return { re, im, frames, bins };
+}
+
+function istft(specRe, specIm, frames, bins, fftSize, hop, length) {
+  const outLen = length || (frames - 1) * hop + fftSize;
+  const out = new Float32Array(outLen), wsum = new Float32Array(outLen);
+  const win = hannWindow(fftSize), scale = Math.sqrt(fftSize);
+  const fullRe = new Float32Array(fftSize), fullIm = new Float32Array(fftSize);
+  const oRe = new Float32Array(fftSize), oIm = new Float32Array(fftSize);
+  for (let f = 0; f < frames; f++) {
+    fullRe.fill(0); fullIm.fill(0);
+    for (let k = 0; k < bins; k++) {
+      fullRe[k] = specRe[f * bins + k]; fullIm[k] = specIm[f * bins + k];
+    }
+    for (let k = 1; k < bins - 1; k++) {
+      fullRe[fftSize - k] = fullRe[k]; fullIm[fftSize - k] = -fullIm[k];
+    }
+    ifft(oRe, oIm, fullRe, fullIm, fftSize);
+    const s = f * hop;
+    for (let i = 0; i < fftSize && s + i < outLen; i++) {
+      out[s + i] += oRe[i] * win[i] * scale;
+      wsum[s + i] += win[i] * win[i];
+    }
+  }
+  for (let i = 0; i < outLen; i++) if (wsum[i] > 1e-8) out[i] /= wsum[i];
+  return out;
+}
+
+function reflectPad(sig, padL, padR) {
+  const n = sig.length, out = new Float32Array(padL + n + padR);
+  for (let i = 0; i < padL; i++) out[i] = sig[Math.min(padL - i, n - 1)];
+  out.set(sig, padL);
+  for (let i = 0; i < padR; i++) out[padL + n + i] = sig[Math.max(0, n - 2 - i)];
+  return out;
+}
+
+// one segment -> waveform [2, T] and complex-as-channels spectrogram [4, 2048, 336]
+function prepareModelInput(left, right) {
+  const T = TRAINING_SAMPLES;
+  const pl = new Float32Array(T), pr = new Float32Array(T);
+  const n = Math.min(left.length, T);
+  pl.set(left.subarray(0, n)); pr.set(right.subarray(0, n));
+
+  const le = Math.ceil(T / HOP_SIZE);
+  const pad = Math.floor(HOP_SIZE / 2) * 3;
+  const padRight = pad + le * HOP_SIZE - T;
+  const c = FFT_SIZE / 2;
+  const sl = stft(reflectPad(reflectPad(pl, pad, padRight), c, c), FFT_SIZE, HOP_SIZE);
+  const sr = stft(reflectPad(reflectPad(pr, pad, padRight), c, c), FFT_SIZE, HOP_SIZE);
+
+  const spec = new Float32Array(4 * SPEC_BINS * SPEC_FRAMES);
+  const plane = SPEC_BINS * SPEC_FRAMES;
+  for (let f = 0; f < SPEC_FRAMES; f++) {
+    const src = (f + 2) * sl.bins;
+    for (let b = 0; b < SPEC_BINS; b++) {
+      const o = b * SPEC_FRAMES + f;
+      spec[o] = sl.re[src + b];
+      spec[plane + o] = sl.im[src + b];
+      spec[2 * plane + o] = sr.re[src + b];
+      spec[3 * plane + o] = sr.im[src + b];
+    }
+  }
+  const waveform = new Float32Array(2 * T);
+  waveform.set(pl, 0); waveform.set(pr, T);
+  return { waveform, spec };
+}
+
+// model frequency output [1, 4 tracks, 4 ch, 2048, 336] -> one track's time signal
+function trackFromSpec(freq, track, targetLength) {
+  const plane = SPEC_BINS * SPEC_FRAMES;
+  const base = track * 4 * plane;
+  const pBins = SPEC_BINS + 1, pFrames = SPEC_FRAMES + 4;
+  const channel = (reOff, imOff) => {
+    const re = new Float32Array(pFrames * pBins), im = new Float32Array(pFrames * pBins);
+    for (let f = 0; f < SPEC_FRAMES; f++) {
+      for (let b = 0; b < SPEC_BINS; b++) {
+        const src = b * SPEC_FRAMES + f, dst = (f + 2) * pBins + b;
+        re[dst] = freq[base + reOff * plane + src];
+        im[dst] = freq[base + imOff * plane + src];
+      }
+    }
+    return { re, im };
+  };
+  const L = channel(0, 1), R = channel(2, 3);
+  const len = (pFrames - 1) * HOP_SIZE + FFT_SIZE;
+  const off = FFT_SIZE / 2 + Math.floor(HOP_SIZE / 2) * 3;
+  const lo = istft(L.re, L.im, pFrames, pBins, FFT_SIZE, HOP_SIZE, len);
+  const ro = istft(R.re, R.im, pFrames, pBins, FFT_SIZE, HOP_SIZE, len);
+  return {
+    left: lo.slice(off, off + targetLength),
+    right: ro.slice(off, off + targetLength)
+  };
+}
+
+// Runs the model over the whole track in overlapping segments and
+// crossfades them. Returns { drums, bass, other, vocals }, each { left, right }.
+async function separate(ort, session, left, right, onProgress) {
+  const T = TRAINING_SAMPLES, total = left.length;
+  const stride = Math.floor(T * (1 - OVERLAP));
+  const ramp = T - stride;                       // overlap length, in samples
+  const nSeg = total <= T ? 1 : Math.ceil((total - T) / stride) + 1;
+  const out = TRACKS.map(() => ({ left: new Float32Array(total), right: new Float32Array(total) }));
+  const weights = new Float32Array(total);
+
+  for (let k = 0; k < nSeg; k++) {
+    const start = k * stride, end = Math.min(start + T, total), len = end - start;
+    const segL = new Float32Array(T), segR = new Float32Array(T);
+    segL.set(left.subarray(start, end)); segR.set(right.subarray(start, end));
+    const input = prepareModelInput(segL, segR);
+
+    const feeds = {};
+    feeds[session.inputNames[0]] = new ort.Tensor("float32", input.waveform, [1, 2, T]);
+    if (session.inputNames.length > 1) {
+      feeds[session.inputNames[1]] = new ort.Tensor("float32", input.spec, [1, 4, SPEC_BINS, SPEC_FRAMES]);
+    }
+    const res = await session.run(feeds);
+
+    let time = null, timeDims = null, freq = null;
+    for (const name of session.outputNames) {
+      const t = res[name];
+      if (t.dims.length === 4 && t.dims[2] === 2) { time = t.data; timeDims = t.dims; }
+      else if (t.dims.length === 5 && t.dims[2] === 4) freq = t.data;
+    }
+    if (!time) throw new Error("model output not recognised");
+    const nTracks = timeDims[1], samples = timeDims[3];
+
+    // final stem = time branch + inverse STFT of the frequency branch
+    const stems = [];
+    for (let t = 0; t < nTracks; t++) {
+      const fr = freq ? trackFromSpec(freq, t, samples) : null;
+      const l = new Float32Array(len), r = new Float32Array(len);
+      const bl = t * 2 * samples, br = bl + samples;
+      for (let i = 0; i < len; i++) {
+        l[i] = time[bl + i] + (fr ? fr.left[i] : 0);
+        r[i] = time[br + i] + (fr ? fr.right[i] : 0);
+      }
+      stems.push({ l, r });
+    }
+
+    // linear crossfade across the overlap with the neighbouring segments
+    const fadeIn = k > 0, fadeOut = k < nSeg - 1;
+    for (let i = 0; i < len; i++) {
+      let w = 1;
+      if (fadeIn && i < ramp) w = Math.min(w, i / ramp);
+      if (fadeOut && len - i < ramp) w = Math.min(w, (len - i) / ramp);
+      weights[start + i] += w;
+      for (let t = 0; t < nTracks; t++) {
+        out[t].left[start + i] += stems[t].l[i] * w;
+        out[t].right[start + i] += stems[t].r[i] * w;
+      }
+    }
+    onProgress && onProgress(k + 1, nSeg);
+  }
+
+  for (let i = 0; i < total; i++) {
+    if (weights[i] > 1e-6) {
+      for (let t = 0; t < TRACKS.length; t++) { out[t].left[i] /= weights[i]; out[t].right[i] /= weights[i]; }
+    }
+  }
+  const result = {};
+  TRACKS.forEach((name, t) => { result[name] = out[t]; });
+  return result;
+}
+// ===== ENGINE END =====
+
+// ---------------------------------------------------------------
+const ORT_URL = "https://cdn.jsdelivr.net/npm/onnxruntime-web@1.21.0/dist/ort.all.mjs";
+const MODEL_URL = "https://huggingface.co/timcsy/demucs-web-onnx/resolve/main/htdemucs_embedded.onnx";
+const MODEL_MB = 172;               // shown while the size header is unavailable
+const CACHE_NAME = "split-model-v1";
+
+const T = {
+  ru: {
+    kicker: "РАЗДЕЛЕНИЕ НА СТЕМЫ",
+    contact: "Написать",
+    sub: "Делит трек на вокал, ударные, бас и остальное и собирает готовый минус. Всё считается в браузере — файл никуда не загружается.",
+    dropTitle: "Перетащи трек сюда",
+    dropHint: "или нажми и выбери · MP3, WAV, M4A, FLAC и другие",
+    change: "Выбрать другой файл",
+    part: "Часть трека", full: "Весь трек", clip: "Первые 30 с",
+    format: "Формат", bitrate: "Битрейт, kbps", bits: "Разрядность",
+    go: "Разделить",
+    hint: "Сначала проверь на «Первые 30 с» — так быстро видно, как лёг результат.",
+    reading: "Читаю звук из файла…",
+    ch: n => n === 1 ? "моно" : n + " кан.",
+    modelDl: (a, b) => "Скачиваю модель: " + a + " из " + b + " MB (один раз, потом из кэша браузера)",
+    modelLoad: "Загружаю модель в память…",
+    starting: "Запускаю разделение…",
+    sep: (n, N, eta) => "Разделяю: сегмент " + n + " из " + N + eta,
+    eta: s => " · осталось ~" + (s >= 90 ? Math.round(s / 60) + " мин" : Math.round(s) + " с"),
+    encoding: "Кодирую",
+    done: "Готово",
+    vocals: "Вокал", instr: "Минус", drums: "Ударные", bass: "Бас", other: "Остальное",
+    instrNote: "ударные + бас + остальное",
+    download: "Скачать",
+    zip: "Скачать всё (ZIP)",
+    again: "Выгрузить заново с текущим форматом",
+    decodeErr: "Браузер не смог прочитать звук из этого файла. Python-версия читает любые форматы через ffmpeg.",
+    memErr: "Не хватило памяти. Попробуй «Первые 30 с», компьютер вместо телефона или Python-версию.",
+    modelErr: "Не удалось скачать модель. Проверь интернет и попробуй ещё раз.",
+    lameErr: "MP3-кодер не загрузился (нет интернета?). Выбери WAV или обнови страницу.",
+    sepErr: "Разделение не удалось. Подробности в консоли браузера.",
+    privacy: "Файлы обрабатываются локально в браузере. ",
+    cli: "Для длинных треков и пакетной работы есть Python-версия: split.py в репозитории — она заметно быстрее."
+  },
+  en: {
+    kicker: "STEM SEPARATOR",
+    contact: "Contact",
+    sub: "Splits a track into vocals, drums, bass and other, and builds a ready instrumental. Everything runs in your browser — the file is never uploaded.",
+    dropTitle: "Drop a track here",
+    dropHint: "or click to choose · MP3, WAV, M4A, FLAC and more",
+    change: "Choose another file",
+    part: "Part of track", full: "Full track", clip: "First 30 s",
+    format: "Format", bitrate: "Bitrate, kbps", bits: "Bit depth",
+    go: "Split",
+    hint: "Try “First 30 s” first — it's a quick way to hear how the result sits.",
+    reading: "Reading audio from the file…",
+    ch: n => n === 1 ? "mono" : n + " ch",
+    modelDl: (a, b) => "Downloading the model: " + a + " of " + b + " MB (once, then cached by the browser)",
+    modelLoad: "Loading the model into memory…",
+    starting: "Starting the separation…",
+    sep: (n, N, eta) => "Separating: segment " + n + " of " + N + eta,
+    eta: s => " · about " + (s >= 90 ? Math.round(s / 60) + " min" : Math.round(s) + " s") + " left",
+    encoding: "Encoding",
+    done: "Done",
+    vocals: "Vocals", instr: "Instrumental", drums: "Drums", bass: "Bass", other: "Other",
+    instrNote: "drums + bass + other",
+    download: "Download",
+    zip: "Download all (ZIP)",
+    again: "Export again with the current format",
+    decodeErr: "The browser couldn't read audio from this file. The Python version reads any format via ffmpeg.",
+    memErr: "Out of memory. Try “First 30 s”, a computer instead of a phone, or the Python version.",
+    modelErr: "Couldn't download the model. Check your connection and try again.",
+    lameErr: "The MP3 encoder didn't load (offline?). Choose WAV or reload the page.",
+    sepErr: "Separation failed. See the browser console for details.",
+    privacy: "Files are processed locally in your browser. ",
+    cli: "For long tracks and batch jobs there's a Python version: split.py in the repo — it's much faster."
+  }
+};
+let lang = (navigator.language || "ru").startsWith("ru") ? "ru" : "en";
+const t = k => T[lang][k];
+
+const $ = s => document.querySelector(s);
+const state = {
+  file: null, buffer: null, part: "full", format: "mp3", kbps: 320, bits: 16,
+  stems: null, base: "", items: [], zipBlob: null, busy: false
+};
+const tick = () => new Promise(r => setTimeout(r, 0));
+
+function applyLang() {
+  document.documentElement.lang = lang;
+  document.querySelectorAll("[data-i18n]").forEach(el => { el.textContent = t(el.dataset.i18n); });
+  document.querySelectorAll(".lang button").forEach(b => b.setAttribute("aria-pressed", b.dataset.lang === lang));
+  if (state.buffer) showMeta();
+  if (state.items.length) renderStems();
+}
+document.querySelectorAll(".lang button").forEach(b => b.onclick = () => { lang = b.dataset.lang; applyLang(); });
+
+// segmented controls
+document.querySelectorAll(".seg").forEach(seg => {
+  seg.addEventListener("click", e => {
+    const b = e.target.closest("button"); if (!b) return;
+    seg.querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", x === b));
+    const k = seg.dataset.key, v = b.dataset.v;
+    state[k] = k === "kbps" || k === "bits" ? Number(v) : v;
+    $("#rowKbps").classList.toggle("hide", state.format !== "mp3");
+    $("#rowBits").classList.toggle("hide", state.format !== "wav");
+  });
+});
+
+// file input
+const drop = $("#drop"), input = $("#file");
+["dragenter", "dragover"].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add("over"); }));
+["dragleave", "drop"].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.remove("over"); }));
+drop.addEventListener("drop", e => { const f = e.dataTransfer.files[0]; if (f) load(f); });
+input.addEventListener("change", () => { if (input.files[0]) load(input.files[0]); });
+$("#change").onclick = () => input.click();
+
+function setStatus(msg, err) { const s = $("#status"); s.textContent = msg || ""; s.classList.toggle("err", !!err); }
+function setProg(p) { $("#prog").style.width = (Math.max(0, Math.min(1, p)) * 100) + "%"; }
+function fmtTime(s) { const m = Math.floor(s / 60), r = Math.floor(s % 60); return m + ":" + String(r).padStart(2, "0"); }
+function fmtSize(b) { return b > 1048576 ? (b / 1048576).toFixed(1) + " MB" : Math.ceil(b / 1024) + " KB"; }
+
+async function decode(file) {
+  const ab = await file.arrayBuffer();
+  const Ctx = window.AudioContext || window.webkitAudioContext;
+  const ctx = new Ctx({ sampleRate: SAMPLE_RATE });
+  try { return await ctx.decodeAudioData(ab); } finally { ctx.close && ctx.close(); }
+}
+
+function showMeta() {
+  const b = state.buffer;
+  $("#fmeta").textContent = fmtTime(b.duration) + "  ·  " + t("ch")(b.numberOfChannels) + "  ·  " + fmtSize(state.file.size);
+}
+
+function resetResults() {
+  state.items.forEach(i => URL.revokeObjectURL(i.url));
+  state.items = []; state.stems = null; state.zipBlob = null;
+  $("#stems").classList.remove("on"); $("#stemList").textContent = "";
+}
+
+async function load(file) {
+  if (state.busy) return;
+  resetResults();
+  state.file = file; state.buffer = null; setProg(0);
+  $("#work").classList.add("on");
+  $("#fname").textContent = file.name; $("#fmeta").textContent = "";
+  setStatus(t("reading"));
+  try {
+    state.buffer = await decode(file);
+    state.base = file.name.replace(/\.[^.]+$/, "");
+    showMeta(); setStatus("");
+  } catch (e) {
+    console.error(e); setStatus(t("decodeErr"), true);
+  }
+}
+
+// ---- model --------------------------------------------------------------
+async function fetchModel(onBytes) {
+  try {
+    const c = await caches.open(CACHE_NAME), hit = await c.match(MODEL_URL);
+    if (hit) return await hit.arrayBuffer();
+  } catch (e) { /* no cache available — just download */ }
+
+  const res = await fetch(MODEL_URL);
+  if (!res.ok) throw new Error("model http " + res.status);
+  const len = Number(res.headers.get("Content-Length")) || 0;
+  const total = len || MODEL_MB * 1048576;
+  let buf;
+  if (res.body && len) {
+    buf = new Uint8Array(len);
+    const reader = res.body.getReader(); let got = 0;
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buf.set(value, got); got += value.length; onBytes(got, total);
+    }
+  } else {
+    buf = new Uint8Array(await res.arrayBuffer()); onBytes(buf.length, buf.length);
+  }
+  try {
+    const c = await caches.open(CACHE_NAME);
+    await c.put(MODEL_URL, new Response(buf.buffer));
+  } catch (e) { /* cache full or blocked — fine */ }
+  return buf.buffer;
+}
+
+let modelPromise = null;
+async function getSession() {
+  if (modelPromise) return modelPromise;
+  modelPromise = (async () => {
+    const ort = await import(ORT_URL);
+    ort.env.wasm.numThreads = self.crossOriginIsolated ? Math.min(navigator.hardwareConcurrency || 4, 8) : 1;
+    const data = await fetchModel((a, b) => {
+      setProg(a / b);
+      setStatus(t("modelDl")((a / 1048576).toFixed(0), (b / 1048576).toFixed(0)));
+    });
+    setProg(0); setStatus(t("modelLoad")); await tick();
+    const low = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    const opts = { graphOptimizationLevel: "basic" };
+    if (low) { opts.enableCpuMemArena = false; opts.enableMemPattern = false; }
+    const make = providers => ort.InferenceSession.create(data, { ...opts, executionProviders: providers });
+    let session, usedGpu = false;
+    try { session = await make(["webgpu", "wasm"]); usedGpu = !!navigator.gpu; }
+    catch (e) { console.warn("WebGPU session failed, using WASM", e); session = await make(["wasm"]); }
+    return { ort, session, usedGpu, make };
+  })();
+  modelPromise.catch(() => { modelPromise = null; });
+  return modelPromise;
+}
+
+// ---- encoding -----------------------------------------------------------
+function peakOf(chs) {
+  let p = 0;
+  for (const c of chs) for (let i = 0; i < c.length; i++) { const v = Math.abs(c[i]); if (v > p) p = v; }
+  return p;
+}
+function safePeak(chs) {            // keep stems clear of clipping
+  const p = peakOf(chs);
+  if (p > 0.999) { const g = 0.999 / p; for (const c of chs) for (let i = 0; i < c.length; i++) c[i] *= g; }
+}
+
+async function encodeWAV(chs, rate, bits, onProg) {
+  const n = chs[0].length, c = chs.length, bps = bits / 8, dataLen = n * c * bps;
+  const buf = new ArrayBuffer(44 + dataLen), v = new DataView(buf);
+  const w = (o, s) => { for (let i = 0; i < s.length; i++) v.setUint8(o + i, s.charCodeAt(i)); };
+  w(0, "RIFF"); v.setUint32(4, 36 + dataLen, true); w(8, "WAVE"); w(12, "fmt ");
+  v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, c, true);
+  v.setUint32(24, rate, true); v.setUint32(28, rate * c * bps, true);
+  v.setUint16(32, c * bps, true); v.setUint16(34, bits, true);
+  w(36, "data"); v.setUint32(40, dataLen, true);
+  let o = 44; const chunk = rate * 5;
+  for (let i = 0; i < n; i++) {
+    for (let ch = 0; ch < c; ch++) {
+      const s = Math.max(-1, Math.min(1, chs[ch][i]));
+      if (bits === 16) { v.setInt16(o, s < 0 ? s * 0x8000 : s * 0x7fff, true); o += 2; }
+      else {
+        const x = Math.round(s < 0 ? s * 0x800000 : s * 0x7fffff);
+        v.setUint8(o, x & 255); v.setUint8(o + 1, (x >> 8) & 255); v.setUint8(o + 2, (x >> 16) & 255); o += 3;
+      }
+    }
+    if (i % chunk === 0) { onProg(i / n); await tick(); }
+  }
+  return new Blob([buf], { type: "audio/wav" });
+}
+
+async function encodeMP3(chs, rate, kbps, onProg) {
+  const enc = new lamejs.Mp3Encoder(chs.length, rate, kbps);
+  const toI16 = f => {
+    const out = new Int16Array(f.length);
+    for (let i = 0; i < f.length; i++) { const s = Math.max(-1, Math.min(1, f[i])); out[i] = s < 0 ? s * 0x8000 : s * 0x7fff; }
+    return out;
+  };
+  const L = toI16(chs[0]), R = chs[1] ? toI16(chs[1]) : null;
+  const parts = [], block = 1152, n = L.length, every = block * 256;
+  for (let i = 0; i < n; i += block) {
+    const l = L.subarray(i, i + block);
+    const out = R ? enc.encodeBuffer(l, R.subarray(i, i + block)) : enc.encodeBuffer(l);
+    if (out.length) parts.push(new Uint8Array(out));
+    if (i % every === 0) { onProg(i / n); await tick(); }
+  }
+  const end = enc.flush(); if (end.length) parts.push(new Uint8Array(end));
+  return new Blob(parts, { type: "audio/mpeg" });
+}
+
+// ---- results ------------------------------------------------------------
+const ORDER = ["vocals", "instr", "drums", "bass", "other"];
+
+function channelsOf(key) {
+  const s = state.stems;
+  if (key !== "instr") return [s[key].left, s[key].right];
+  const n = s.drums.left.length, L = new Float32Array(n), R = new Float32Array(n);
+  for (let i = 0; i < n; i++) {
+    L[i] = s.drums.left[i] + s.bass.left[i] + s.other.left[i];
+    R[i] = s.drums.right[i] + s.bass.right[i] + s.other.right[i];
+  }
+  return [L, R];
+}
+
+async function exportAll() {
+  state.items.forEach(i => URL.revokeObjectURL(i.url));
+  state.items = []; state.zipBlob = null;
+  const ext = state.format;
+  for (let k = 0; k < ORDER.length; k++) {
+    const key = ORDER[k], chs = channelsOf(key);
+    safePeak(chs);
+    const prog = p => {
+      const all = (k + p) / ORDER.length;
+      setProg(all); setStatus(t("encoding") + " " + Math.round(all * 100) + "%");
+    };
+    const blob = ext === "mp3"
+      ? await encodeMP3(chs, SAMPLE_RATE, state.kbps, prog)
+      : await encodeWAV(chs, SAMPLE_RATE, state.bits, prog);
+    const name = state.base + "_" + (key === "instr" ? "instrumental" : key) + "." + ext;
+    state.items.push({ key, blob, name, url: URL.createObjectURL(blob) });
+    await tick();
+  }
+  setProg(1);
+}
+
+function renderStems() {
+  const list = $("#stemList"); list.textContent = "";
+  for (const it of state.items) {
+    const card = document.createElement("div");
+    card.className = "stem" + (it.key === "vocals" || it.key === "instr" ? " main" : "");
+    const head = document.createElement("div"); head.className = "stem-head";
+    const nm = document.createElement("span"); nm.className = "stem-name"; nm.textContent = t(it.key);
+    const note = document.createElement("span"); note.className = "meta";
+    note.textContent = (it.key === "instr" ? t("instrNote") + "  ·  " : "") + fmtSize(it.blob.size);
+    head.append(nm, note);
+    const au = document.createElement("audio"); au.controls = true; au.preload = "none"; au.src = it.url;
+    const foot = document.createElement("div"); foot.className = "stem-foot";
+    const a = document.createElement("a"); a.className = "dl"; a.href = it.url; a.download = it.name; a.textContent = t("download");
+    foot.append(a);
+    card.append(head, au, foot);
+    list.append(card);
+  }
+  $("#stems").classList.add("on");
+}
+
+$("#zip").onclick = async () => {
+  if (!state.items.length) return;
+  const btn = $("#zip"); btn.disabled = true;
+  try {
+    if (!state.zipBlob) {
+      const zip = new JSZip();
+      state.items.forEach(i => zip.file(i.name, i.blob));
+      state.zipBlob = await zip.generateAsync({ type: "blob", compression: "STORE" });
+    }
+    const url = URL.createObjectURL(state.zipBlob);
+    const a = document.createElement("a"); a.href = url; a.download = state.base + "_split.zip";
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
+  } catch (e) { console.error(e); setStatus(t("sepErr"), true); }
+  finally { btn.disabled = false; }
+};
+
+$("#again").onclick = async () => {
+  if (!state.stems || state.busy) return;
+  state.busy = true; $("#go").disabled = true;
+  try {
+    if (state.format === "mp3" && typeof lamejs === "undefined") throw new Error("lame");
+    await exportAll(); renderStems(); setStatus(t("done"));
+  } catch (e) {
+    console.error(e); setStatus(e.message === "lame" ? t("lameErr") : t("sepErr"), true);
+  } finally { state.busy = false; $("#go").disabled = false; }
+};
+
+// ---- main action --------------------------------------------------------
+$("#go").onclick = async () => {
+  if (!state.buffer || state.busy) return;
+  state.busy = true; const go = $("#go"); go.disabled = true;
+  resetResults(); setProg(0);
+  try {
+    if (state.format === "mp3" && typeof lamejs === "undefined") throw new Error("lame");
+
+    let L = state.buffer.getChannelData(0);
+    let R = state.buffer.numberOfChannels > 1 ? state.buffer.getChannelData(1) : L;
+    if (state.part === "clip") {
+      const n = Math.min(L.length, 30 * SAMPLE_RATE);
+      L = L.subarray(0, n); R = R.subarray(0, n);
+    }
+
+    let ctx;
+    try { ctx = await getSession(); }
+    catch (e) { console.error(e); throw new Error("model"); }
+
+    const t0 = performance.now();
+    const onSeg = (n, N) => {
+      const el = (performance.now() - t0) / 1000;
+      const eta = n < N ? t("eta")(el / n * (N - n)) : "";
+      setProg(n / N); setStatus(t("sep")(n, N, eta));
+    };
+    setProg(0); setStatus(t("starting")); await tick();
+    try {
+      state.stems = await separate(ctx.ort, ctx.session, L, R, onSeg);
+    } catch (e) {
+      if (!ctx.usedGpu) throw e;
+      console.warn("WebGPU run failed, retrying on WASM", e);       // some ops may be unsupported
+      ctx.session = await ctx.make(["wasm"]); ctx.usedGpu = false;
+      state.stems = await separate(ctx.ort, ctx.session, L, R, onSeg);
+    }
+
+    await exportAll(); renderStems(); setStatus(t("done"));
+  } catch (e) {
+    console.error(e);
+    const msg = String(e && e.message || e);
+    const key = msg === "lame" ? "lameErr" : msg === "model" ? "modelErr"
+      : /memory|alloc|bad_alloc|RangeError/i.test(msg) ? "memErr" : "sepErr";
+    setStatus(t(key), true);
+  } finally { state.busy = false; go.disabled = false; }
+};
+
+applyLang();
+</script>
+</body>
+</html>
