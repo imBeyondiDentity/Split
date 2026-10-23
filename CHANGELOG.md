@@ -4,6 +4,15 @@
 
 ## 2026-10-23
 
+- Redesigned to match the shared MiSE look: cards with orange
+  labels, filled segmented controls, version tag at the top left,
+  EN/RU toggle at the top right, a footer with Github, the brand and
+  Contact, and two columns on a wide screen. The language choice is
+  remembered.
+- Phone memory fixes: on phones the model runs on WASM only, with
+  graph optimisation off, no kept copy of the model after loading and
+  no cache copy. If a tab is killed during a run, the page now says so
+  after it reloads, and a note about memory shows up on phones.
 - First release of Split: a browser app (`index.html`) and a Python
   CLI (`split.py`).
 - Four stems from HTDemucs — vocals, drums, bass, other — plus an

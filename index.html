@@ -1,179 +1,190 @@
 <!doctype html>
-<html lang="ru">
+<html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Split — stem separator</title>
-<link rel="icon" href="data:image/svg+xml,<svg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20100%20100'>%20<rect%20width='100'%20height='100'%20rx='20'%20fill='%230e0d0c'/>%20<path%20d='M22%2030%20H78%20M22%2050%20H62%20M22%2070%20H70'%20fill='none'%20stroke='%23ff6a1a'%20stroke-width='8'%20stroke-linecap='round'/>%20</svg>">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Split</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%230e0d0c'/><path d='M22 30H78M22 50H62M22 70H70' fill='none' stroke='%23ff6a1a' stroke-width='8' stroke-linecap='round'/></svg>">
+<meta name="theme-color" content="#0e0d0c">
+<meta name="description" content="Stem separator: vocals, drums, bass, other and an instrumental. RU/EN. Runs in your browser.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/lamejs/1.2.1/lame.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <style>
 :root{
-  --bg:#0e0d0c; --panel:#171513; --line:#2c2824; --text:#ece6de;
-  --muted:#8f877d; --accent:#ff6a1a; --accent-dim:#5a2a10;
-  --serif:"Playfair Display",Georgia,"Times New Roman",serif;
-  --mono:"JetBrains Mono",ui-monospace,"SFMono-Regular",Menlo,Consolas,monospace;
-  box-sizing:border-box;
-  padding-top:env(safe-area-inset-top,0px);
-  padding-bottom:env(safe-area-inset-bottom,0px);
+  --bg:#0e0d0c;--card:#151412;--card2:#1b1917;--line:#2a2724;--text:#ece7e1;--mute:#8d867e;
+  --acc:#ff6a1a;--acc-d:#c9500f;--ok:#6fcf97;--warn:#f2c94c;--err:#eb5757;--info:#7aa2f7;
+  --serif:'Playfair Display',Georgia,'Times New Roman',serif;
+  --mono:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
 }
-*,*::before,*::after{box-sizing:inherit}
-html,body{margin:0;background:var(--bg);color:var(--text)}
-body{font-family:var(--mono);font-size:14px;line-height:1.55;-webkit-font-smoothing:antialiased}
-main{max-width:720px;margin:0 auto;padding:48px 20px 64px;position:relative}
-header{text-align:center;margin:0 auto 36px}
-.kicker{display:block;text-align:center;color:var(--accent);font-size:12px;letter-spacing:.18em;margin-bottom:18px}
-h1{font-family:var(--serif);font-weight:900;font-size:clamp(64px,14vw,112px);line-height:.85;margin:0;letter-spacing:-.02em}
-.sub{color:var(--muted);margin:14px auto 0;max-width:46ch}
-.lang{position:absolute;top:48px;right:20px;display:flex;border:1px solid var(--line);border-radius:999px;overflow:hidden;flex-shrink:0}
-.lang button{background:none;border:0;color:var(--muted);font:inherit;font-size:12px;padding:6px 12px;cursor:pointer}
-.lang button[aria-pressed="true"]{background:var(--text);color:var(--bg)}
+*{box-sizing:border-box}
+html{color-scheme:dark;-webkit-text-size-adjust:100%;text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--text);font:15px/1.55 var(--mono);-webkit-font-smoothing:antialiased;padding-bottom:0}
+.wrap{max-width:1200px;margin:0 auto;padding:0 16px;position:relative}
+header{padding:56px 0 22px;text-align:center;border-bottom:1px solid var(--line)}
+.kicker{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--acc);margin:0 0 14px}
+h1{font:700 clamp(36px,7vw,68px)/1.05 var(--serif);margin:0 0 16px;letter-spacing:-.01em}
+.sub{max-width:720px;color:var(--mute);margin:0 auto;font-size:13.5px}
+.lang{position:absolute;top:18px;right:16px;z-index:20;display:flex;background:var(--card);border:1px solid var(--line);border-radius:999px;padding:3px}
+.lang button{all:unset;cursor:pointer;font-size:11px;letter-spacing:.1em;padding:5px 12px;border-radius:999px;color:var(--mute)}
+.lang button[aria-pressed=true]{background:var(--acc);color:#120a04;font-weight:700}
+.vtag{position:absolute;top:18px;left:16px;z-index:20;display:flex;align-items:center;height:36px;background:var(--card);border:1px solid var(--line);border-radius:999px;padding:0 14px;font-size:11px;letter-spacing:.1em;color:var(--mute);user-select:none}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--card)}
+.seg button{all:unset;cursor:pointer;padding:9px 18px;font-size:13px;color:var(--mute);transition:.15s}
+.seg button:hover{color:var(--text)}
+.seg button[aria-pressed=true]{background:var(--acc);color:#120a04;font-weight:700}
+.seg.full{display:flex;width:100%}
+.seg.full button{flex:1;text-align:center;padding:9px 6px}
+.grid{display:grid;grid-template-columns:1fr;gap:18px;padding:22px 0}
+@media(min-width:980px){.grid{grid-template-columns:minmax(0,1fr) minmax(0,1.05fr);gap:22px}.sticky{align-self:start}}
+.col{display:flex;flex-direction:column;gap:18px;min-width:0}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px}
+.card h2{font:600 11px var(--mono);letter-spacing:.16em;text-transform:uppercase;color:var(--acc);margin:0 0 14px;display:flex;justify-content:space-between;align-items:center;gap:10px}
+label{display:block;font-size:11.5px;color:var(--mute);margin:12px 0 5px}
+label:first-of-type{margin-top:0}
+.chip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--card2);color:var(--text);border-radius:999px;padding:5px 11px;font-size:11.5px;text-decoration:none}
+a.chip:hover{border-color:var(--acc);color:var(--acc)}
+.btn{all:unset;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:9px 15px;border-radius:9px;background:var(--acc);color:#120a04;font:700 12.5px var(--mono);transition:.15s}
+.btn:hover{background:#ff8340}
+.btn.ghost{background:transparent;color:var(--text);border:1px solid var(--line);font-weight:500}
+.btn.ghost:hover{border-color:var(--acc);color:var(--acc)}
+.btn.sm{padding:6px 11px;font-size:11.5px}
+.btn:disabled{opacity:.5;cursor:progress;background:var(--acc)}
+.btn.ghost:disabled{background:transparent}
+.btn:focus-visible,.seg button:focus-visible,.lang button:focus-visible,.chip:focus-visible,.drop:focus-within{outline:2px solid var(--acc);outline-offset:2px}
+.hint{font-size:11.5px;color:var(--mute);margin:8px 0 0}
+.meter{height:4px;background:var(--line);border-radius:4px;overflow:hidden}
+.meter i{display:block;height:100%;width:0;background:var(--acc);transition:width .2s}
+.empty{color:var(--mute);font-size:13px;padding:22px 4px;text-align:center;margin:0}
+.foot{color:var(--mute);font-size:11.5px;padding:10px 0 30px;max-width:760px}
+[hidden],.hide{display:none!important}
+::selection{background:var(--acc);color:#120a04}
+@media(max-width:700px){header{padding-top:76px}}
 
-.drop{display:block;border:1px solid var(--line);border-radius:18px;padding:44px 20px;text-align:center;cursor:pointer;transition:border-color .15s,background .15s}
-.drop:hover,.drop.over{border-color:var(--accent);background:#1a1411}
-.drop strong{display:block;font-family:var(--serif);font-weight:400;font-size:30px;margin-bottom:6px}
-.drop span{color:var(--muted);font-size:12px}
+.end{display:flex;align-items:center;justify-content:space-between;gap:10px;border-top:1px solid var(--line);padding:22px 0 calc(34px + env(safe-area-inset-bottom,0px));color:var(--mute);font-size:12px}
+.end .brand{text-align:center;white-space:nowrap}
+.end .brand i{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--acc);margin-right:8px;vertical-align:middle;font-style:normal}
+.end .brand i.right{margin-right:0;margin-left:8px}
+.end .chip{flex:none}
+
+/* size scale: actions 40px, chips and small buttons 34px, footer chips 40px */
+.btn{min-height:40px;box-sizing:border-box}
+.btn.sm{min-height:34px}
+.chip{min-height:34px;padding:0 14px;font-size:12px}
+.end .chip{min-height:40px;padding:0 18px;font-size:13px;color:var(--acc)}
+@media(max-width:420px){.card{padding:16px 14px}}
+
+/* Split */
+.drop{display:block;margin:0;border:1px solid var(--line);border-radius:12px;padding:30px 16px;text-align:center;cursor:pointer;background:var(--bg);color:var(--text);font-size:13px;transition:border-color .15s,background .15s}
+.drop:hover,.drop.over{border-color:var(--acc);background:#1a1411}
+.drop b{display:block;font-size:14px;margin-bottom:4px}
+.drop span{color:var(--mute);font-size:11.5px}
 .drop input{position:absolute;width:1px;height:1px;opacity:0}
-
-.work{display:none;margin-top:28px}
-.work.on{display:block}
-.file{display:flex;justify-content:space-between;gap:12px;align-items:baseline;flex-wrap:wrap;margin-bottom:26px}
-.file .name{font-family:var(--serif);font-size:26px;word-break:break-all}
-.meta{color:var(--muted);font-size:12px}
-.change{background:none;border:0;color:var(--accent);font:inherit;font-size:12px;cursor:pointer;padding:0;text-decoration:underline;text-underline-offset:3px}
-
-.row{display:grid;grid-template-columns:130px 1fr;gap:10px 16px;align-items:center;margin-bottom:14px}
-.row > label{color:var(--muted);font-size:12px}
-.seg{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;width:100%}
-.seg.four{grid-template-columns:repeat(4,1fr)}
-.seg button{width:100%;text-align:center;white-space:nowrap;background:var(--panel);border:1px solid var(--line);color:var(--text);font:inherit;font-size:13px;padding:10px 8px;border-radius:8px;cursor:pointer}
-.seg button[aria-pressed="true"]{border-color:var(--accent);color:var(--accent)}
-.seg.big button{font-family:var(--serif);font-size:24px;padding:6px 22px}
-.hide{display:none!important}
-
-.go{margin-top:22px;width:100%;background:var(--accent);color:#140a04;border:0;border-radius:10px;font:600 15px var(--mono);padding:16px;cursor:pointer}
-.go:disabled{background:var(--accent-dim);color:#b98c70;cursor:progress}
-.bar{height:3px;background:var(--line);margin-top:12px;border-radius:2px;overflow:hidden}
-.bar i{display:block;height:100%;width:0;background:var(--accent);transition:width .1s}
-.status{min-height:1.5em;margin-top:10px;color:var(--muted);font-size:12px}
-.status.err{color:#ff8a7a}
-.hint{margin-top:6px;color:var(--muted);font-size:12px}
-
-.stems{display:none;margin-top:26px}
+#rowKbps label,#rowBits label{margin-top:12px}
+.fileRow{margin-top:14px}
+.fname{font-weight:700;font-size:13px;word-break:break-all}
+.fmeta{color:var(--mute);font-size:11.5px}
+.btn.go{width:100%;margin-top:18px}
+.meter.run{margin-top:12px}
+.status{min-height:1.5em;margin-top:10px;color:var(--mute);font-size:12px}
+.status.err{color:var(--err)}
+.stems{display:none}
 .stems.on{display:block}
-.stem{padding:16px 18px;border:1px solid var(--line);border-radius:12px;background:var(--panel);margin-bottom:12px}
-.stem.main{border-color:var(--accent-dim)}
-.stem-head{display:flex;justify-content:space-between;align-items:baseline;gap:4px 12px;flex-wrap:wrap;margin-bottom:10px}
-.stem-name{font-family:var(--serif);font-size:24px}
-.stem audio{width:100%;margin-bottom:12px}
-.stem-foot{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
-.dl{display:inline-block;color:var(--bg);background:var(--text);text-decoration:none;padding:10px 16px;border-radius:8px;font-weight:600}
-.zip{display:block;width:100%;margin-top:6px;background:none;color:var(--text);border:1px solid var(--line);border-radius:10px;font:600 14px var(--mono);padding:14px;cursor:pointer;transition:border-color .15s}
-.zip:hover{border-color:var(--accent)}
-.zip:disabled{opacity:.5;cursor:progress}
-.again{margin-top:14px;text-align:center}
-
-footer{margin-top:56px;color:var(--muted);font-size:12px;border-top:1px solid var(--line);padding-top:16px}
-footer a{color:var(--text)}
-.repo-row{display:flex;justify-content:space-between;align-items:center;margin-top:24px;gap:12px}
-.repo-link{display:inline-flex;align-items:center;gap:6px;color:var(--muted);font-family:var(--mono);font-size:12px;text-decoration:none;border:1px solid var(--line);border-radius:999px;padding:8px 16px;transition:border-color .15s,color .15s}
-.repo-link:hover{border-color:var(--accent);color:var(--text)}
-.signature{margin-top:16px;text-align:center;color:var(--muted);font-size:12px}
-.signature i{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--accent);margin-right:8px;vertical-align:middle;font-style:normal}
-button:focus-visible,.drop:focus-within,a:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
-@media (max-width:520px){
-  main{padding-top:76px}
-  .row{grid-template-columns:1fr;gap:6px}
-  .lang{top:20px}
-}
-@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+.stem{background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:10px}
+.stem.main{border-color:rgba(255,106,26,.45)}
+.sh{display:flex;justify-content:space-between;align-items:baseline;gap:4px 12px;flex-wrap:wrap;margin-bottom:10px}
+.nm{font-weight:700;font-size:13px}
+.mt{color:var(--mute);font-size:11px}
+.stem audio{display:block;width:100%;margin-bottom:12px}
+.zip{width:100%;margin-top:4px}
+.again{margin-top:12px;text-align:center}
 </style>
 </head>
 <body>
-<main>
+<main class="wrap">
+<div class="vtag" title="Split">v1.1</div>
+<div class="lang" role="group" aria-label="Language">
+  <button type="button" data-lang="en" aria-pressed="true">EN</button>
+  <button type="button" data-lang="ru" aria-pressed="false">RU</button>
+</div>
   <header>
-    <div>
-      <span class="kicker" data-i18n="kicker"></span>
-      <h1>Split</h1>
-      <p class="sub" data-i18n="sub"></p>
-    </div>
-    <div class="lang" role="group" aria-label="Language">
-      <button data-lang="ru" aria-pressed="true">RU</button>
-      <button data-lang="en" aria-pressed="false">EN</button>
-    </div>
+    <p class="kicker" data-i18n="kicker"></p>
+    <h1>Split</h1>
+    <p class="sub" data-i18n="sub"></p>
   </header>
 
-  <label class="drop" id="drop">
-    <input type="file" id="file" accept="audio/*,video/*,.mp3,.wav,.m4a,.flac,.aac,.ogg,.opus,.wma,.mp4,.mov,.m4v,.webm">
-    <strong data-i18n="dropTitle"></strong>
-    <span data-i18n="dropHint"></span>
-  </label>
+  <section class="grid">
+    <div class="col">
+      <div class="card">
+        <h2><span data-i18n="c_track"></span></h2>
+        <label class="drop" id="drop">
+          <input type="file" id="file" accept="audio/*,video/*,.mp3,.wav,.m4a,.flac,.aac,.ogg,.opus,.wma,.mp4,.mov,.m4v,.webm">
+          <b data-i18n="dropTitle"></b>
+          <span data-i18n="dropHint"></span>
+        </label>
+        <div class="fileRow" id="fileRow" hidden>
+          <div class="fname" id="fname"></div>
+          <div class="fmeta" id="fmeta"></div>
+        </div>
+      </div>
 
-  <section class="work" id="work">
-    <div class="file">
-      <div>
-        <div class="name" id="fname"></div>
-        <div class="meta" id="fmeta"></div>
-      </div>
-      <button class="change" id="change" data-i18n="change"></button>
-    </div>
-
-    <div class="row">
-      <label data-i18n="part"></label>
-      <div class="seg" data-key="part">
-        <button data-v="full" aria-pressed="true" data-i18n="full"></button>
-        <button data-v="clip" aria-pressed="false" data-i18n="clip"></button>
-      </div>
-    </div>
-    <div class="row">
-      <label data-i18n="format"></label>
-      <div class="seg big" data-key="format">
-        <button data-v="mp3" aria-pressed="true">MP3</button>
-        <button data-v="wav" aria-pressed="false">WAV</button>
-      </div>
-    </div>
-    <div class="row" id="rowKbps">
-      <label data-i18n="bitrate"></label>
-      <div class="seg four" data-key="kbps">
-        <button data-v="128" aria-pressed="false">128</button>
-        <button data-v="192" aria-pressed="false">192</button>
-        <button data-v="256" aria-pressed="false">256</button>
-        <button data-v="320" aria-pressed="true">320</button>
-      </div>
-    </div>
-    <div class="row hide" id="rowBits">
-      <label data-i18n="bits"></label>
-      <div class="seg" data-key="bits">
-        <button data-v="16" aria-pressed="true">16 bit</button>
-        <button data-v="24" aria-pressed="false">24 bit</button>
+      <div class="card">
+        <h2><span data-i18n="c_set"></span></h2>
+        <label data-i18n="part"></label>
+        <div class="seg full" data-key="part">
+          <button type="button" data-v="full" aria-pressed="true" data-i18n="full"></button>
+          <button type="button" data-v="clip" aria-pressed="false" data-i18n="clip"></button>
+        </div>
+        <label data-i18n="format"></label>
+        <div class="seg full" data-key="format">
+          <button type="button" data-v="mp3" aria-pressed="true">MP3</button>
+          <button type="button" data-v="wav" aria-pressed="false">WAV</button>
+        </div>
+        <div id="rowKbps">
+          <label data-i18n="bitrate"></label>
+          <div class="seg full" data-key="kbps">
+            <button type="button" data-v="128" aria-pressed="false">128</button>
+            <button type="button" data-v="192" aria-pressed="false">192</button>
+            <button type="button" data-v="256" aria-pressed="false">256</button>
+            <button type="button" data-v="320" aria-pressed="true">320</button>
+          </div>
+        </div>
+        <div class="hide" id="rowBits">
+          <label data-i18n="bits"></label>
+          <div class="seg full" data-key="bits">
+            <button type="button" data-v="16" aria-pressed="true">16 bit</button>
+            <button type="button" data-v="24" aria-pressed="false">24 bit</button>
+          </div>
+        </div>
+        <button type="button" class="btn go" id="go" data-i18n="go" disabled></button>
+        <div class="meter run"><i id="prog"></i></div>
+        <div class="status" id="status" role="status"></div>
+        <p class="hint" id="hint" data-i18n="hint"></p>
+        <p class="hint hide" id="phoneNote" data-i18n="phone"></p>
       </div>
     </div>
 
-    <button class="go" id="go" data-i18n="go"></button>
-    <div class="bar"><i id="prog"></i></div>
-    <div class="status" id="status" role="status"></div>
-    <div class="hint" id="hint" data-i18n="hint"></div>
-
-    <div class="stems" id="stems">
-      <div id="stemList"></div>
-      <button class="zip" id="zip" data-i18n="zip"></button>
-      <div class="again"><button class="change" id="again" data-i18n="again"></button></div>
+    <div class="col sticky">
+      <div class="card">
+        <h2><span data-i18n="c_res"></span></h2>
+        <p class="empty" id="resEmpty" data-i18n="empty"></p>
+        <div class="stems" id="stems">
+          <div id="stemList"></div>
+          <button type="button" class="btn ghost zip" id="zip" data-i18n="zip"></button>
+          <div class="again"><button type="button" class="btn ghost sm" id="again" data-i18n="again"></button></div>
+        </div>
+      </div>
     </div>
   </section>
 
-  <footer>
-    <span data-i18n="privacy"></span>
-    <span data-i18n="cli"></span>
+  <p class="foot"><span data-i18n="privacy"></span><span data-i18n="cli"></span></p>
+  <footer class="end">
+    <a class="chip" href="https://github.com/imBeyondiDentity/Split" target="_blank" rel="noopener" data-i18n="back"></a>
+    <span class="brand"><i></i>Split<i class="right"></i></span>
+    <a class="chip" href="mailto:imbeyondidentity@gmail.com" data-i18n="contact"></a>
   </footer>
-
-  <div class="repo-row">
-    <a class="repo-link" href="https://github.com/imBeyondiDentity/Split" target="_blank" rel="noopener">GitHub</a>
-    <a class="repo-link" href="mailto:imbeyondidentity@gmail.com" data-i18n="contact"></a>
-  </div>
-  <div class="signature"><i></i>Split</div>
 </main>
 
 <script type="module">
@@ -442,10 +453,18 @@ const ORT_URL = "https://cdn.jsdelivr.net/npm/onnxruntime-web@1.21.0/dist/ort.al
 const MODEL_URL = "https://huggingface.co/timcsy/demucs-web-onnx/resolve/main/htdemucs_embedded.onnx";
 const MODEL_MB = 172;               // shown while the size header is unavailable
 const CACHE_NAME = "split-model-v1";
+const PHONE = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) ||
+  (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);   // iPadOS
+const RUN_FLAG = "split-running";
+const flag = on => { try { on ? sessionStorage.setItem(RUN_FLAG, "1") : sessionStorage.removeItem(RUN_FLAG); } catch (e) { /* private mode */ } };
+const hadCrash = () => { try { return sessionStorage.getItem(RUN_FLAG) === "1"; } catch (e) { return false; } };
 
 const T = {
   ru: {
-    kicker: "РАЗДЕЛЕНИЕ НА СТЕМЫ",
+    kicker: "HTDemucs · Разделение на стемы",
+    c_track: "Трек", c_set: "Настройки", c_res: "Результат",
+    empty: "Результаты появятся здесь.",
+    back: "Github",
     contact: "Написать",
     sub: "Делит трек на вокал, ударные, бас и остальное и собирает готовый минус. Всё считается в браузере — файл никуда не загружается.",
     dropTitle: "Перетащи трек сюда",
@@ -455,6 +474,8 @@ const T = {
     format: "Формат", bitrate: "Битрейт, kbps", bits: "Разрядность",
     go: "Разделить",
     hint: "Сначала проверь на «Первые 30 с» — так быстро видно, как лёг результат.",
+    phone: "Телефон: модели нужно много памяти, и Safari может закрыть вкладку. Надёжнее компьютер или Python-версия.",
+    crash: "Страница перезагрузилась во время разделения — скорее всего, устройству не хватило памяти. Надёжнее компьютер или Python-версия (split.py).",
     reading: "Читаю звук из файла…",
     ch: n => n === 1 ? "моно" : n + " кан.",
     modelDl: (a, b) => "Скачиваю модель: " + a + " из " + b + " MB (один раз, потом из кэша браузера)",
@@ -478,7 +499,10 @@ const T = {
     cli: "Для длинных треков и пакетной работы есть Python-версия: split.py в репозитории — она заметно быстрее."
   },
   en: {
-    kicker: "STEM SEPARATOR",
+    kicker: "HTDemucs · Stem separator",
+    c_track: "Track", c_set: "Settings", c_res: "Result",
+    empty: "Results will appear here.",
+    back: "Github",
     contact: "Contact",
     sub: "Splits a track into vocals, drums, bass and other, and builds a ready instrumental. Everything runs in your browser — the file is never uploaded.",
     dropTitle: "Drop a track here",
@@ -488,6 +512,8 @@ const T = {
     format: "Format", bitrate: "Bitrate, kbps", bits: "Bit depth",
     go: "Split",
     hint: "Try “First 30 s” first — it's a quick way to hear how the result sits.",
+    phone: "Phone: the model needs a lot of memory and Safari may close the tab. A computer or the Python version is safer.",
+    crash: "The page reloaded during separation — most likely the device ran out of memory. A computer or the Python version (split.py) is safer.",
     reading: "Reading audio from the file…",
     ch: n => n === 1 ? "mono" : n + " ch",
     modelDl: (a, b) => "Downloading the model: " + a + " of " + b + " MB (once, then cached by the browser)",
@@ -511,7 +537,9 @@ const T = {
     cli: "For long tracks and batch jobs there's a Python version: split.py in the repo — it's much faster."
   }
 };
-let lang = (navigator.language || "ru").startsWith("ru") ? "ru" : "en";
+const LANG_KEY = "split-lang";
+let lang = /^ru|^uk|^be/i.test(navigator.language || "") ? "ru" : "en";
+try { const s = localStorage.getItem(LANG_KEY); if (s === "ru" || s === "en") lang = s; } catch (e) { /* storage unavailable */ }
 const t = k => T[lang][k];
 
 const $ = s => document.querySelector(s);
@@ -528,7 +556,10 @@ function applyLang() {
   if (state.buffer) showMeta();
   if (state.items.length) renderStems();
 }
-document.querySelectorAll(".lang button").forEach(b => b.onclick = () => { lang = b.dataset.lang; applyLang(); });
+document.querySelectorAll(".lang button").forEach(b => b.onclick = () => {
+  lang = b.dataset.lang; applyLang();
+  try { localStorage.setItem(LANG_KEY, lang); } catch (e) { /* storage unavailable */ }
+});
 
 // segmented controls
 document.querySelectorAll(".seg").forEach(seg => {
@@ -548,7 +579,6 @@ const drop = $("#drop"), input = $("#file");
 ["dragleave", "drop"].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.remove("over"); }));
 drop.addEventListener("drop", e => { const f = e.dataTransfer.files[0]; if (f) load(f); });
 input.addEventListener("change", () => { if (input.files[0]) load(input.files[0]); });
-$("#change").onclick = () => input.click();
 
 function setStatus(msg, err) { const s = $("#status"); s.textContent = msg || ""; s.classList.toggle("err", !!err); }
 function setProg(p) { $("#prog").style.width = (Math.max(0, Math.min(1, p)) * 100) + "%"; }
@@ -570,20 +600,20 @@ function showMeta() {
 function resetResults() {
   state.items.forEach(i => URL.revokeObjectURL(i.url));
   state.items = []; state.stems = null; state.zipBlob = null;
-  $("#stems").classList.remove("on"); $("#stemList").textContent = "";
+  $("#stems").classList.remove("on"); $("#resEmpty").hidden = false; $("#stemList").textContent = "";
 }
 
 async function load(file) {
   if (state.busy) return;
   resetResults();
   state.file = file; state.buffer = null; setProg(0);
-  $("#work").classList.add("on");
+  $("#fileRow").hidden = false; $("#go").disabled = true;
   $("#fname").textContent = file.name; $("#fmeta").textContent = "";
   setStatus(t("reading"));
   try {
     state.buffer = await decode(file);
     state.base = file.name.replace(/\.[^.]+$/, "");
-    showMeta(); setStatus("");
+    showMeta(); setStatus(""); $("#go").disabled = false;
   } catch (e) {
     console.error(e); setStatus(t("decodeErr"), true);
   }
@@ -612,10 +642,12 @@ async function fetchModel(onBytes) {
   } else {
     buf = new Uint8Array(await res.arrayBuffer()); onBytes(buf.length, buf.length);
   }
-  try {
-    const c = await caches.open(CACHE_NAME);
-    await c.put(MODEL_URL, new Response(buf.buffer));
-  } catch (e) { /* cache full or blocked — fine */ }
+  if (!PHONE) {   // on a phone every extra copy of the model counts, so no cache write
+    try {
+      const c = await caches.open(CACHE_NAME);
+      await c.put(MODEL_URL, new Response(buf.buffer.slice(0)));
+    } catch (e) { /* cache full or blocked — fine */ }
+  }
   return buf.buffer;
 }
 
@@ -625,16 +657,23 @@ async function getSession() {
   modelPromise = (async () => {
     const ort = await import(ORT_URL);
     ort.env.wasm.numThreads = self.crossOriginIsolated ? Math.min(navigator.hardwareConcurrency || 4, 8) : 1;
-    const data = await fetchModel((a, b) => {
+    let data = await fetchModel((a, b) => {
       setProg(a / b);
       setStatus(t("modelDl")((a / 1048576).toFixed(0), (b / 1048576).toFixed(0)));
     });
     setProg(0); setStatus(t("modelLoad")); await tick();
-    const low = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-    const opts = { graphOptimizationLevel: "basic" };
-    if (low) { opts.enableCpuMemArena = false; opts.enableMemPattern = false; }
+    // phones: WASM only, no graph optimisation (it makes extra copies of the
+    // weights), no arenas, and no kept copy of the model once it is loaded
+    const opts = PHONE
+      ? { graphOptimizationLevel: "disabled", enableCpuMemArena: false, enableMemPattern: false }
+      : { graphOptimizationLevel: "basic" };
     const make = providers => ort.InferenceSession.create(data, { ...opts, executionProviders: providers });
     let session, usedGpu = false;
+    if (PHONE) {
+      session = await make(["wasm"]);
+      data = null;
+      return { ort, session, usedGpu: false, make: null };
+    }
     try { session = await make(["webgpu", "wasm"]); usedGpu = !!navigator.gpu; }
     catch (e) { console.warn("WebGPU session failed, using WASM", e); session = await make(["wasm"]); }
     return { ort, session, usedGpu, make };
@@ -737,18 +776,17 @@ function renderStems() {
   for (const it of state.items) {
     const card = document.createElement("div");
     card.className = "stem" + (it.key === "vocals" || it.key === "instr" ? " main" : "");
-    const head = document.createElement("div"); head.className = "stem-head";
-    const nm = document.createElement("span"); nm.className = "stem-name"; nm.textContent = t(it.key);
-    const note = document.createElement("span"); note.className = "meta";
+    const head = document.createElement("div"); head.className = "sh";
+    const nm = document.createElement("span"); nm.className = "nm"; nm.textContent = t(it.key);
+    const note = document.createElement("span"); note.className = "mt";
     note.textContent = (it.key === "instr" ? t("instrNote") + "  ·  " : "") + fmtSize(it.blob.size);
     head.append(nm, note);
     const au = document.createElement("audio"); au.controls = true; au.preload = "none"; au.src = it.url;
-    const foot = document.createElement("div"); foot.className = "stem-foot";
-    const a = document.createElement("a"); a.className = "dl"; a.href = it.url; a.download = it.name; a.textContent = t("download");
-    foot.append(a);
-    card.append(head, au, foot);
+    const a = document.createElement("a"); a.className = "btn sm"; a.href = it.url; a.download = it.name; a.textContent = t("download");
+    card.append(head, au, a);
     list.append(card);
   }
+  $("#resEmpty").hidden = true;
   $("#stems").classList.add("on");
 }
 
@@ -777,7 +815,7 @@ $("#again").onclick = async () => {
     await exportAll(); renderStems(); setStatus(t("done"));
   } catch (e) {
     console.error(e); setStatus(e.message === "lame" ? t("lameErr") : t("sepErr"), true);
-  } finally { state.busy = false; $("#go").disabled = false; }
+  } finally { state.busy = false; $("#go").disabled = !state.buffer; }
 };
 
 // ---- main action --------------------------------------------------------
@@ -785,6 +823,7 @@ $("#go").onclick = async () => {
   if (!state.buffer || state.busy) return;
   state.busy = true; const go = $("#go"); go.disabled = true;
   resetResults(); setProg(0);
+  flag(true);    // cleared in `finally`; if still set after a reload, the tab was killed
   try {
     if (state.format === "mp3" && typeof lamejs === "undefined") throw new Error("lame");
 
@@ -822,10 +861,15 @@ $("#go").onclick = async () => {
     const key = msg === "lame" ? "lameErr" : msg === "model" ? "modelErr"
       : /memory|alloc|bad_alloc|RangeError/i.test(msg) ? "memErr" : "sepErr";
     setStatus(t(key), true);
-  } finally { state.busy = false; go.disabled = false; }
+  } finally { flag(false); state.busy = false; go.disabled = !state.buffer; }
 };
 
+if (PHONE) $("#phoneNote").classList.remove("hide");
 applyLang();
+if (hadCrash()) {      // the previous run took the tab down
+  flag(false);
+  setStatus(t("crash"), true);
+}
 </script>
 </body>
 </html>
