@@ -69,13 +69,6 @@ song_split/
 | `-r` | include subfolders |
 | `--overwrite` | replace existing results |
 
-## Publishing to GitHub Pages
-
-1. Create a repository named `Split`, push the files to the root
-2. Settings → Pages → Source: Deploy from a branch
-3. Branch: `main`, folder `/ (root)`
-4. Within a minute the app is live at
-   `https://<username>.github.io/Split/`
 
 ## Credits
 
