@@ -87,6 +87,7 @@ a.chip:hover{border-color:var(--acc);color:var(--acc)}
 .fname{font-weight:700;font-size:13px;word-break:break-all}
 .fmeta{color:var(--mute);font-size:11.5px}
 .btn.go{width:100%;margin-top:18px}
+.btn.colab{width:100%}
 .meter.run{margin-top:12px}
 .status{min-height:1.5em;margin-top:10px;color:var(--mute);font-size:12px}
 .status.err{color:var(--err)}
@@ -117,6 +118,12 @@ a.chip:hover{border-color:var(--acc);color:var(--acc)}
 
   <section class="grid">
     <div class="col">
+      <div class="card hide" id="phoneCard">
+        <h2><span data-i18n="c_phone"></span></h2>
+        <p class="hint" style="margin:0 0 14px" data-i18n="phone"></p>
+        <a class="btn colab" href="https://colab.research.google.com/github/imBeyondiDentity/Split/blob/main/split.ipynb" target="_blank" rel="noopener" data-i18n="colab"></a>
+      </div>
+
       <div class="card">
         <h2><span data-i18n="c_track"></span></h2>
         <label class="drop" id="drop">
@@ -162,7 +169,6 @@ a.chip:hover{border-color:var(--acc);color:var(--acc)}
         <div class="meter run"><i id="prog"></i></div>
         <div class="status" id="status" role="status"></div>
         <p class="hint" id="hint" data-i18n="hint"></p>
-        <p class="hint hide" id="phoneNote" data-i18n="phone"></p>
       </div>
     </div>
 
@@ -474,8 +480,10 @@ const T = {
     format: "Формат", bitrate: "Битрейт, kbps", bits: "Разрядность",
     go: "Разделить",
     hint: "Сначала проверь на «Первые 30 с» — так быстро видно, как лёг результат.",
-    phone: "Телефон: модели нужно много памяти, и Safari может закрыть вкладку. Надёжнее компьютер или Python-версия.",
-    crash: "Страница перезагрузилась во время разделения — скорее всего, устройству не хватило памяти. Надёжнее компьютер или Python-версия (split.py).",
+    c_phone: "Телефон",
+    phone: "Модели нужно больше памяти, чем есть во вкладке телефона: Safari её закрывает. Бесплатный надёжный путь — ноутбук в Google Colab: загружаешь трек и получаешь ZIP со всеми файлами.",
+    colab: "Открыть в Colab",
+    crash: "Страница перезагрузилась во время разделения — скорее всего, устройству не хватило памяти. Надёжнее Colab (кнопка выше), компьютер или Python-версия (split.py).",
     reading: "Читаю звук из файла…",
     ch: n => n === 1 ? "моно" : n + " кан.",
     modelDl: (a, b) => "Скачиваю модель: " + a + " из " + b + " MB (один раз, потом из кэша браузера)",
@@ -512,8 +520,10 @@ const T = {
     format: "Format", bitrate: "Bitrate, kbps", bits: "Bit depth",
     go: "Split",
     hint: "Try “First 30 s” first — it's a quick way to hear how the result sits.",
-    phone: "Phone: the model needs a lot of memory and Safari may close the tab. A computer or the Python version is safer.",
-    crash: "The page reloaded during separation — most likely the device ran out of memory. A computer or the Python version (split.py) is safer.",
+    c_phone: "Phone",
+    phone: "The model needs more memory than a phone tab has, and Safari closes it. The free, reliable way is a Google Colab notebook: upload a track and get a ZIP with every file.",
+    colab: "Open in Colab",
+    crash: "The page reloaded during separation — most likely the device ran out of memory. Colab (the button above), a computer or the Python version (split.py) is safer.",
     reading: "Reading audio from the file…",
     ch: n => n === 1 ? "mono" : n + " ch",
     modelDl: (a, b) => "Downloading the model: " + a + " of " + b + " MB (once, then cached by the browser)",
@@ -864,10 +874,11 @@ $("#go").onclick = async () => {
   } finally { flag(false); state.busy = false; go.disabled = !state.buffer; }
 };
 
-if (PHONE) $("#phoneNote").classList.remove("hide");
+if (PHONE) $("#phoneCard").classList.remove("hide");
 applyLang();
 if (hadCrash()) {      // the previous run took the tab down
   flag(false);
+  $("#phoneCard").classList.remove("hide");
   setStatus(t("crash"), true);
 }
 </script>

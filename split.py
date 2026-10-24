@@ -11,10 +11,17 @@ Examples:
   python split.py ./songs -r -o ./out
 """
 import argparse
+import os
 import shutil
 import subprocess
 import sys
 from pathlib import Path
+
+# Demucs 4.0.1 stores a full model class in its checkpoints, and PyTorch
+# 2.6+ refuses to unpickle that by default. The weights come from Meta's
+# official release that Demucs downloads itself, so allow the old
+# behaviour. This must be set before torch is imported.
+os.environ.setdefault("TORCH_FORCE_NO_WEIGHTS_ONLY_LOAD", "1")
 
 AUDIO_EXT = {
     ".mp3", ".wav", ".flac", ".m4a", ".aac", ".ogg", ".opus", ".wma",

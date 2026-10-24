@@ -24,9 +24,18 @@ Both use Demucs (HTDemucs), and both save MP3 or WAV.
   then kept in the browser cache
 - On GitHub Pages the browser runs the model on one thread, so a full
   track takes a while — use the CLI for long tracks or batches
-- A phone may run out of memory on a full track; a computer is safer
+- A phone tab can't hold the model and Safari closes it — on a phone
+  use the Colab notebook below
 - Reads what the browser can decode (MP3, WAV, M4A, FLAC, MP4 and
   so on). For anything else, use the CLI
+
+## On a phone (Colab)
+
+Open the notebook, tap ▶ on Step 1, then on Step 2, choose a track
+and wait for the ZIP with all five files. It runs `split.py` from this
+repository on a free Google GPU, so nothing is installed on the phone.
+
+[Open `split.ipynb` in Colab](https://colab.research.google.com/github/imBeyondiDentity/Split/blob/main/split.ipynb)
 
 ## CLI
 
@@ -71,7 +80,8 @@ song_split/
 
 ## Publishing to GitHub Pages
 
-1. Create a repository named `Split`, push the files to the root
+1. Create a public repository named `Split`, push the files to the
+   root (the Colab notebook reads `split.py` from there)
 2. Settings → Pages → Source: Deploy from a branch
 3. Branch: `main`, folder `/ (root)`
 4. Within a minute the app is live at

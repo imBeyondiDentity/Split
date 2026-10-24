@@ -2,6 +2,16 @@
 
 [Русская версия](CHANGELOG_ru.md)
 
+## 2026-10-24
+
+- Added `split.ipynb`, a Google Colab notebook for phones: upload a
+  track, get a ZIP with all five files, using `split.py` on a free GPU.
+- On phones (and after a killed tab) the page shows a card with an
+  "Open in Colab" button.
+- `split.py` now sets `TORCH_FORCE_NO_WEIGHTS_ONLY_LOAD` before
+  importing PyTorch, because Demucs 4.0.1 checkpoints do not load under
+  the PyTorch 2.6+ default.
+
 ## 2026-10-23
 
 - Redesigned to match the shared MiSE look: cards with orange
